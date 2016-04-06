@@ -7,7 +7,7 @@ package icesi.edu.co.servicios.parcialuno;
 
 import com.sun.org.apache.xml.internal.resolver.Resolver;
 import java.util.concurrent.Semaphore;
-
+/*Version mostrar*/
 /**
  *
  * @author distribuidos
@@ -17,7 +17,6 @@ public class Puente {
     private int espaciosDisponiblesPuente;
     private int cantidadCochesDerecha;
     private int cantidadCochesIzquierda;
-    
     private Semaphore mutex;
     private Semaphore espaciosPuente;
     private Semaphore cochesDisponiblesDerecha;
@@ -52,6 +51,9 @@ public class Puente {
     }
     
     public void ponerCochesDerecha() throws InterruptedException{
+        /*
+        Este metodo le permite al generador de carros de la derecha hacer V()al semaforo de los recursos de los carros de la derecha
+        */
         mutexCochesDerecha.acquire();
         cantidadCochesDerecha= cantidadCochesDerecha + 1;
         mutexCochesDerecha.release();    
@@ -62,6 +64,9 @@ public class Puente {
     }
     
     public void ponerCochesIzquierda() throws InterruptedException{
+/*        
+    Este metodo le permite al generador de carros de la izquierda hacer V()al semaforo de los recursos de los carros de la izquierda
+*/
         mutexCohesIzquierda.acquire();
         cantidadCochesIzquierda= cantidadCochesIzquierda + 1;
         mutexCohesIzquierda.release(); 
@@ -72,17 +77,30 @@ public class Puente {
         
     }
     public void darPaso() throws InterruptedException{
+        /*
+        El Guarda hace P(n) al semaforo de los recursos de los carros del lado correspondiente para reservarlos y poder mandarlos por el puente
+        en caso de que tenga mas de 10 carros en la cola el manda 10 y le da paso al otro lado. Para hacer esto el tambien reserva P() al semaforo
+        de los recursos de los espacios del puente para mandar los vehiculos.
+        
+        
+        */
          
         if(ladoPuente==0){
            
-            if(cantidadCochesDerecha<10 && cantidadCochesDerecha>0){
+            if(cantidadCochesDerecha==0){
+                ladoPuente=1;
+               System.out.println("cambie de lado porque no habia carros en la --------------****************** derecha" );
+
+                
+            }
+            else if(cantidadCochesDerecha<10 && cantidadCochesDerecha>0){
                 liberarEspaciosPuente();
                 cochesDisponiblesDerecha.acquire(cantidadCochesDerecha);
                 espaciosPuente.acquire(cantidadCochesDerecha);
                 mutex.acquire();
                 System.out.println("Mande carros a la derecha------------------" + cantidadCochesDerecha);
 
-                espaciosDisponiblesPuente=espaciosDisponiblesPuente-cantidadCochesIzquierda;
+                espaciosDisponiblesPuente=espaciosDisponiblesPuente-cantidadCochesDerecha;
                 mutexCochesDerecha.acquire();
                 cantidadCochesDerecha= cantidadCochesDerecha - cantidadCochesDerecha;
                 mutexCochesDerecha.release();
@@ -136,8 +154,12 @@ public class Puente {
         }
         
         else{
-            
-            if(cantidadCochesIzquierda<10 && cantidadCochesIzquierda>0){
+            if(cantidadCochesIzquierda==0){
+                ladoPuente=0;
+                System.out.println("cambie de lado porque no habia carros en la --------------****************** izquierda" );
+
+            }
+            else if(cantidadCochesIzquierda<10 && cantidadCochesIzquierda>0){
                 liberarEspaciosPuente();
                 cochesDisponiblesIzquierda.acquire(cantidadCochesIzquierda);
                 espaciosPuente.acquire(cantidadCochesIzquierda);
@@ -199,6 +221,12 @@ public class Puente {
     }
     
     public void liberarEspaciosPuente() throws InterruptedException{
+        /*
+        
+        En este metodo el Guarda hace V() al semaforo de los recursos de los espacios en el puente y hace P() al semaforo
+        mutex de la variable espaciosPuente para reservarla y aumentarla y V() para liberarla
+        
+        */
             mutex.acquire();
             espaciosDisponiblesPuente=10-espaciosDisponiblesPuente;       
             espaciosPuente.release(10-espaciosDisponiblesPuente);
